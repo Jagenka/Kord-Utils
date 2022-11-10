@@ -9,7 +9,7 @@ import dev.kord.core.on
  */
 class MessageCommandRegistry(val kord: Kord)
 {
-    private val commands = mutableSetOf<MessageCommand>()
+    private val commands = mutableMapOf<String, MessageCommand>()
 
     init
     {
@@ -17,13 +17,15 @@ class MessageCommandRegistry(val kord: Kord)
             // return if author is a bot or undefined
             if (message.author?.isBot != false) return@on
 
-
+            val args = this.message.content.split(" ")
+            val firstWord = args.getOrNull(0) ?: return@on
+            commands[firstWord]?.execute(this, args) ?: return@on
         }
     }
 
     fun register(command: MessageCommand)
     {
-        commands.add(command)
+        command.firstWords.forEach { commands[it] = command }
         command.prepare(kord)
     }
 }

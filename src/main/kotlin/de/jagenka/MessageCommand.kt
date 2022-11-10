@@ -15,6 +15,9 @@ interface MessageCommand
      */
     val names: List<String>
 
+    val firstWords: List<String>
+        get() = names.map { "$prefix$it" }
+
     /**
      * Short help text shown in command overview
      */
