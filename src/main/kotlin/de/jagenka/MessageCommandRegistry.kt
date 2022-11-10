@@ -19,7 +19,7 @@ class MessageCommandRegistry(val kord: Kord)
 
             val args = this.message.content.split(" ")
             val firstWord = args.getOrNull(0) ?: return@on
-            commands[firstWord]?.execute(this, args) ?: return@on
+            commands[firstWord]?.execute(this, args) ?: return@on //TODO: admin and nsfw check
         }
     }
 
