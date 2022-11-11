@@ -15,9 +15,6 @@ interface MessageCommand
      */
     val names: List<String>
 
-    val firstWords: List<String>
-        get() = names.map { "$prefix$it" }
-
     /**
      * Short help text shown in command overview
      */
@@ -29,12 +26,6 @@ interface MessageCommand
     val longHelpText: String
 
     //TODO: implement help command
-
-    /**
-     * An example on how to start the message to trigger this command. This is mainly for help texts.
-     */
-    val commandExample: String
-        get() = "${prefix}${names.firstOrNull()}"
 
     /**
      * This represents, if the command needs admin powers.
@@ -58,3 +49,9 @@ interface MessageCommand
      */
     suspend fun execute(event: MessageCreateEvent, args: List<String>)
 }
+
+val MessageCommand.firstWords: List<String>
+    get() = names.map { "$prefix$it" }
+
+val MessageCommand.commandExample: String
+    get() = "${prefix}${names.firstOrNull()}"

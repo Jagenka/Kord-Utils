@@ -7,6 +7,7 @@ import dev.kord.core.on
 
 /**
  * Registry for all MessageCommands belonging to a Kord instance. The bot needs to have message read access, otherwise this will not work.
+ * Make sure to create an instance of this before you login your bot with Kord::login
  */
 class MessageCommandRegistry(val kord: Kord, val adminRoleId: Snowflake)
 {
