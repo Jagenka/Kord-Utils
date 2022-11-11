@@ -28,6 +28,8 @@ interface MessageCommand
      */
     val longHelpText: String
 
+    //TODO: implement help command
+
     /**
      * An example on how to start the message to trigger this command. This is mainly for help texts.
      */
