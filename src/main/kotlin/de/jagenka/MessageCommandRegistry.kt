@@ -1,5 +1,6 @@
 package de.jagenka
 
+import dev.kord.common.entity.Snowflake
 import dev.kord.core.Kord
 import dev.kord.core.event.message.MessageCreateEvent
 import dev.kord.core.on
@@ -7,9 +8,23 @@ import dev.kord.core.on
 /**
  * Registry for all MessageCommands belonging to a Kord instance. The bot needs to have message read access, otherwise this will not work.
  */
-class MessageCommandRegistry(val kord: Kord)
+class MessageCommandRegistry(val kord: Kord, val adminRoleId: Snowflake)
 {
     private val commands = mutableMapOf<String, MessageCommand>()
+
+    /**
+     * suspend function to be called if a command needs admin, but the sender does not have the admin role.
+     */
+    var needsAdminResponse: suspend (event: MessageCreateEvent) -> Unit = {
+        it.message.channel.createMessage("You need to be admin to do that!")
+    }
+
+    /**
+     * suspend function to be called if a command can only execute in a channel marked "NSFW", but isn't marked as such.
+     */
+    var needsNSFWResponse: suspend (event: MessageCreateEvent) -> Unit = {
+        it.message.channel.createMessage("You can only do that in a channel marked \"NSFW\"!")
+    }
 
     init
     {
@@ -19,10 +34,28 @@ class MessageCommandRegistry(val kord: Kord)
 
             val args = this.message.content.split(" ")
             val firstWord = args.getOrNull(0) ?: return@on
-            commands[firstWord]?.execute(this, args) ?: return@on //TODO: admin and nsfw check
+            val command = commands[firstWord] ?: return@on
+
+            if (command.needsAdmin && this.member?.roleIds?.contains(adminRoleId) != true) // command needs admin, but sender does not have the admin role
+            {
+                needsAdminResponse.invoke(this)
+                return@on
+            }
+
+            if (command.needsNSFW && !this.message.channel.fetchChannel().data.nsfw.discordBoolean) // channel is not NSFW, but needs to be
+            {
+                needsNSFWResponse.invoke(this)
+                return@on
+            }
+
+            command.execute(this, args)
         }
     }
 
+    /**
+     * Register your own implementation of a MessageCommand here. This method will also call `command.prepare(kord)`.
+     * @param command is said custom implementation of MessageCommand.
+     */
     fun register(command: MessageCommand)
     {
         command.firstWords.forEach { commands[it] = command }
