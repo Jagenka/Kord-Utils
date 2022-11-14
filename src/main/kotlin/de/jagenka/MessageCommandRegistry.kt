@@ -49,7 +49,7 @@ class MessageCommandRegistry(val kord: Kord, val adminRoleId: Snowflake)
                 return@on
             }
 
-            command.execute(this, args)
+            command.findSubcommand(0, this, args)
         }
     }
 
