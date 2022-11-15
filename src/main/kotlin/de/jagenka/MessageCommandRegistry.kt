@@ -63,7 +63,7 @@ class MessageCommandRegistry(val kord: Kord, val adminRoleId: Snowflake)
         command.prepare(kord)
     }
 
-    internal fun getShortHelpTexts(): List<String>
+    internal fun getShortHelpTexts(): List<String> //TODO: filter admin
     {
         val result = mutableListOf<String>()
         commands.values.toSortedSet { one, two -> one.commandExample.compareTo(two.commandExample) }
