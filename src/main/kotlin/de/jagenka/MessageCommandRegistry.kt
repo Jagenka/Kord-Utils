@@ -66,7 +66,8 @@ class MessageCommandRegistry(val kord: Kord, val adminRoleId: Snowflake)
     internal fun getShortHelpTexts(): List<String>
     {
         val result = mutableListOf<String>()
-        commands.values.toSet().forEach { cmd -> result.addAll(cmd.getPreorderWithPrefix("").map { "`${it.first}`: ${it.second.shortHelpText}" }) }
+        commands.values.toSortedSet { one, two -> one.commandExample.compareTo(two.commandExample) }
+                .forEach { cmd -> result.addAll(cmd.getPreorderWithPrefix("").map { "`${it.first}`: ${it.second.shortHelpText}" }) }
         return result
     }
 }
