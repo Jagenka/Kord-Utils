@@ -7,10 +7,10 @@ abstract class MessageCommand
 {
     val subcommands = mutableListOf<MessageCommand>()
 
-    final val firstWords: List<String>
+    val firstWords: List<String>
         get() = names.map { "$prefix$it" }
 
-    final val commandExample: String
+    val commandExample: String
         get() = "${prefix}${names.firstOrNull()}"
 
     /**
@@ -57,7 +57,7 @@ abstract class MessageCommand
      */
     abstract suspend fun execute(event: MessageCreateEvent, args: List<String>)
 
-    internal final suspend fun findSubcommand(level: Int, event: MessageCreateEvent, args: List<String>)
+    internal suspend fun findSubcommand(level: Int, event: MessageCreateEvent, args: List<String>)
     {
         args.getOrNull(level + 1)?.let { subcommandName ->
             subcommands.forEach { subcommand ->
