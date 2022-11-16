@@ -49,7 +49,7 @@ class MessageCommandRegistry(val kord: Kord, val adminRoleId: Snowflake)
                 return@on
             }
 
-            command.findSubcommand(0, this, args)
+            command.allowedArgumentCombinations.forEach { it.runIfFitting(this, args) }
         }
     }
 

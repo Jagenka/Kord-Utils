@@ -1,14 +1,16 @@
 package de.jagenka
 
 import dev.kord.core.Kord
-import dev.kord.core.event.message.MessageCreateEvent
 
 abstract class MessageCommand
 {
     val subcommands = mutableListOf<MessageCommand>()
 
-    val firstWords: List<String>
+    internal val firstWords: List<String>
         get() = names.map { "$prefix$it" }
+
+    internal val commandExample: String
+        get() = "${prefix}${names.first()}"
 
     /**
      * Prefix for command literal, so that message is considered a command
@@ -56,25 +58,5 @@ abstract class MessageCommand
      */
     open fun prepare(kord: Kord) = Unit
 
-    /**
-     * This method determines what this command should do.
-     * @param event MessageCreateEvent from which this method is called
-     * @param args is the message word by word (split by " ")
-     */
-    abstract suspend fun execute(event: MessageCreateEvent, args: List<String>) // TODO: commands may only contain subcommands but cannot be executed on their own
-
-    internal suspend fun findSubcommand(level: Int, event: MessageCreateEvent, args: List<String>)
-    {
-        args.getOrNull(level + 1)?.let { subcommandName ->
-            subcommands.forEach { subcommand ->
-                if ("${subcommand.prefix}$subcommandName" in subcommand.names)
-                {
-                    subcommand.findSubcommand(level + 1, event, args)
-                    return
-                }
-            }
-        }
-
-        execute(event, args)
-    }
+    abstract val allowedArgumentCombinations: List<ArgumentCombination>
 }

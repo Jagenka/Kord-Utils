@@ -1,8 +1,7 @@
 package de.jagenka
 
-import dev.kord.core.event.message.MessageCreateEvent
-
 //TODO: arguments in help text
+//TODO: noch nicht angepasst
 class HelpMessageCommand(private val registry: MessageCommandRegistry, private val customPrefix: String) : MessageCommand()
 {
     override val prefix: String
@@ -17,12 +16,11 @@ class HelpMessageCommand(private val registry: MessageCommandRegistry, private v
         get() = "Displays this help text."
     override val longHelpText: String
         get() = "Display a help text."
-
-    override suspend fun execute(event: MessageCreateEvent, args: List<String>)
-    {
-        if (args.size == 1)
-        {
-            Util.sendMessageInSameChannel(event, registry.getShortHelpTexts().joinToString(separator = "\n"))
-        }
-    }
+    override val allowedArgumentCombinations: List<ArgumentCombination>
+        get() = listOf(
+                ArgumentCombination(emptyList()) { event, _ ->
+                    Util.sendMessageInSameChannel(event, registry.getShortHelpTexts().joinToString(separator = "\n"))
+                    true
+                }
+        )
 }
