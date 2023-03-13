@@ -1,25 +1,23 @@
 package de.jagenka
 
-//TODO: arguments in help text
-//TODO: noch nicht angepasst
-class HelpMessageCommand(private val registry: MessageCommandRegistry, private val customPrefix: String) : MessageCommand()
+class HelpMessageCommand(private val registry: MessageCommandRegistry) : MessageCommand()
 {
-    override val prefix: String
-        get() = customPrefix
-    override val names: List<String>
+    override val ids: List<String>
         get() = listOf("help", "?")
     override val needsAdmin: Boolean
         get() = false
     override val needsNSFW: Boolean
         get() = false
-    override val shortHelpText: String
-        get() = "Displays this help text."
-    override val longHelpText: String
-        get() = "Display a help text."
+    override val helpText: String
+        get() = "Get help for commands."
     override val allowedArgumentCombinations: List<ArgumentCombination>
         get() = listOf(
-                ArgumentCombination(emptyList()) { event, _ ->
-                    Util.sendMessageInSameChannel(event, registry.getShortHelpTexts().joinToString(separator = "\n"))
+                ArgumentCombination(emptyList(), "Displays this help text.") { event, _ ->
+                    Util.sendMessageInSameChannel(event, registry.getShortHelpTexts().joinToString(separator = System.lineSeparator()))
+                    true
+                },
+                ArgumentCombination(listOf(Argument.string("command")), "Get help for a specific command.") { event, arguments ->
+                    Util.sendMessageInSameChannel(event, registry.getHelpTextsForCommand(arguments["command"].toString()).joinToString(separator = System.lineSeparator()))
                     true
                 }
         )

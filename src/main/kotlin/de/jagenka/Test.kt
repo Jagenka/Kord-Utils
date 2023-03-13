@@ -1,6 +1,7 @@
 package de.jagenka
 
-import dev.kord.common.entity.Snowflake
+import de.jagenka.Argument.Companion.literal
+import de.jagenka.Argument.Companion.string
 import dev.kord.core.Kord
 import dev.kord.gateway.Intent
 import dev.kord.gateway.PrivilegedIntent
@@ -13,16 +14,16 @@ object Test
     fun main(args: Array<String>)
     {
         val token = System.getenv()["BOT_TOKEN"] ?: error("error reading bot token")
-        val adminRoleSnowflake = Snowflake(System.getenv()["ADMIN_ROLE_ID"]?.toULong() ?: error("error reading admin role id"))
 
         runBlocking {
             val kord = Kord(token)
 
-            val registry = MessageCommandRegistry(kord, adminRoleSnowflake)
-            registry.register(NormalCommand)
+            val registry = MessageCommandRegistry(kord, "!")
+            registry.register(HelloCommand)
+            registry.register(HelpMessageCommand(registry))
+
 //            registry.register(NSFWCommand)
 //            registry.register(AdminCommand)
-            registry.register(HelpMessageCommand(registry, "!"))
 
             registry.needsNSFWResponse = { event ->
                 Util.addReactionToMessage(event.message, Emojis.x)
@@ -33,7 +34,7 @@ object Test
             }
 
             // scheinbar passiert nach login nichts mehr
-            kord.login {// TODO: move?
+            kord.login {
                 @OptIn(PrivilegedIntent::class)
                 intents += Intent.MessageContent
             }
@@ -41,36 +42,31 @@ object Test
     }
 }
 
-object NormalCommand : MessageCommand()
+object HelloCommand : MessageCommand()
 {
-    override val prefix: String
-        get() = "!"
-    override val names: List<String>
-        get() = listOf("normal")
-    override val shortHelpText: String
-        get() = "short help"
-    override val longHelpText: String
-        get() = "long help"
+    override val ids: List<String>
+        get() = listOf("hello", "hi")
+    override val helpText: String
+        get() = "sag hallo jetzt"
     override val needsAdmin: Boolean
         get() = false
     override val needsNSFW: Boolean
         get() = false
 
-    override fun prepare(kord: Kord)
-    {
-        println("NormalCommand ready.")
-    }
-
     override val allowedArgumentCombinations: List<ArgumentCombination>
         get() = listOf(
-                ArgumentCombination(emptyList()) { event, args ->
-                    event.message.channel.createMessage("Dies ist was Sie tippten: $args")
+                ArgumentCombination(emptyList(), "aus nichts kommt nichts") { event, _ ->
+                    event.message.channel.createMessage("0 args")
                     true
                 },
-                ArgumentCombination(listOf(Argument("a", ArgumentType.STRING))) { event, args ->
-                    Util.sendMessageInSameChannel(event, "domcommand > subcommand")
+                ArgumentCombination(listOf(string("name")), "tell me your name, and I will say Hello!") { event, arguments ->
+                    Util.sendMessageInSameChannel(event, "Hello ${arguments["name"]}")
                     true
-                }
+                },
+                ArgumentCombination(listOf(literal("jay")), "ne net du jay") { event, _ ->
+                    Util.sendMessageInSameChannel(event, "Verpiss dich, Jay!")
+                    true
+                },
         )
 }
 

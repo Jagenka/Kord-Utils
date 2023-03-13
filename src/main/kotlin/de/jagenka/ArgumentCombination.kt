@@ -2,23 +2,41 @@ package de.jagenka
 
 import dev.kord.core.event.message.MessageCreateEvent
 
-class ArgumentCombination(private val arguments: List<Argument>, private val executes: suspend (event: MessageCreateEvent, args: List<String>) -> Boolean) // TODO?: unlimited args
+class ArgumentCombination(
+        internal val arguments: List<Argument<*>>,// TODO?: vararg
+        internal val helpText: String,
+        private val executes: suspend (event: MessageCreateEvent, arguments: Map<String, Any?>) -> Boolean // TODO: Any is not quite satisfactory
+) : Comparable<ArgumentCombination>
 {
-    private fun fitsTo(args: List<String>): Boolean
+    internal fun fitsTo(args: List<String>): Boolean
     {
         if (args.size != arguments.size) return false
 
         arguments.forEachIndexed { index, argument ->
-            if (!argument.hasFittingType(args[index])) return false
+            if (!argument.isOfType(args[index])) return false
         }
 
         return true
     }
 
-    internal suspend fun runIfFitting(event: MessageCreateEvent, args: List<String>): Boolean
+    internal suspend fun run(event: MessageCreateEvent, args: List<String>): Boolean
     {
-        if (!fitsTo(args.drop(1))) return false
+        val map = mutableMapOf<String, Any?>()
+        args.drop(1).forEachIndexed { index, arg ->
+            val argument = arguments[index]
+            map[argument.id] = argument.convertToType(arg)
+        }
+        return executes.invoke(event, map.toMap())
+    }
 
-        return executes.invoke(event, args)
+    private val rank: Int
+        get()
+        {
+            return -arguments.count { it is LiteralArgument }
+        }
+
+    override fun compareTo(other: ArgumentCombination): Int
+    {
+        return rank.compareTo(other.rank)
     }
 }

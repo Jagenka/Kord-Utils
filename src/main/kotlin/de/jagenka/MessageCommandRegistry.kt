@@ -1,6 +1,5 @@
 package de.jagenka
 
-import dev.kord.common.entity.Snowflake
 import dev.kord.core.Kord
 import dev.kord.core.event.message.MessageCreateEvent
 import dev.kord.core.on
@@ -9,7 +8,15 @@ import dev.kord.core.on
  * Registry for all MessageCommands belonging to a Kord instance. The bot needs to have message read access, otherwise this will not work.
  * Make sure to create an instance of this before you login your bot with Kord::login
  */
-class MessageCommandRegistry(val kord: Kord, val adminRoleId: Snowflake)
+
+class MessageCommandRegistry(
+        val kord: Kord,
+        /**
+         * What a message must start with, so that it is considered by this registry.
+         */
+        val prefix: String,
+        val interactsWithBots: Boolean = true
+)
 {
     private val commands = mutableMapOf<String, MessageCommand>()
 
@@ -30,14 +37,24 @@ class MessageCommandRegistry(val kord: Kord, val adminRoleId: Snowflake)
     init
     {
         kord.on<MessageCreateEvent> {
-            // return if author is a bot or undefined
-            if (message.author?.isBot != false) return@on
+            if (interactsWithBots)
+            {
+                // return if author is self or undefined
+                if (message.author?.id == kord.selfId) return@on
+            } else
+            {
+                // return if author is a bot or undefined
+                if (message.author?.isBot != false) return@on
+            }
+
+            if (!message.content.startsWith(prefix)) return@on
 
             val args = this.message.content.split(" ")
             val firstWord = args.getOrNull(0) ?: return@on
-            val command = commands[firstWord] ?: return@on
 
-            if (command.needsAdmin && this.member?.roleIds?.contains(adminRoleId) != true) // command needs admin, but sender does not have the admin role
+            val command = commands[firstWord.removePrefix(prefix)] ?: return@on
+
+            if (command.needsAdmin && this.member?.isOwner() != true) // command needs admin, but sender is not owner TODO: adminRole
             {
                 needsAdminResponse.invoke(this)
                 return@on
@@ -49,7 +66,7 @@ class MessageCommandRegistry(val kord: Kord, val adminRoleId: Snowflake)
                 return@on
             }
 
-            command.allowedArgumentCombinations.forEach { it.runIfFitting(this, args) }
+            command.run(this, args)
         }
     }
 
@@ -59,15 +76,24 @@ class MessageCommandRegistry(val kord: Kord, val adminRoleId: Snowflake)
      */
     fun register(command: MessageCommand)
     {
-        command.firstWords.forEach { commands[it] = command }
+        command.ids.forEach {
+            if (commands.containsKey(it)) error("command id `$it` is already assigned to command ${commands[it]}")
+            commands[it] = command
+        }
         command.prepare(kord)
     }
 
     internal fun getShortHelpTexts(): List<String> //TODO: filter admin
     {
-        val result = mutableListOf<String>()
-        commands.values.toSortedSet { one, two -> one.commandExample.compareTo(two.commandExample) }
-                .forEach { cmd -> result.addAll(cmd.getPreorderWithPrefix("").map { "`${it.first}`: ${it.second.shortHelpText}" }) }
-        return result
+        return commands.values.toSortedSet().map { it.ids.joinToString(separator = "|", postfix = ": ${it.helpText}") { "`$prefix$it`" } }
+    }
+
+    internal fun getHelpTextsForCommand(id: String): List<String>
+    {
+        return commands[id]?.allowedArgumentCombinations?.map {
+            it.arguments.joinToString(prefix = "`$prefix$id ", separator = " ") {
+                it.displayInHelp
+            }.trim() + "`: ${it.helpText}"
+        } ?: listOf("`$prefix$id` is not a valid command.")
     }
 }

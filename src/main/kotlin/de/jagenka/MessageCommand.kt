@@ -1,26 +1,14 @@
 package de.jagenka
 
 import dev.kord.core.Kord
+import dev.kord.core.event.message.MessageCreateEvent
 
-abstract class MessageCommand
+abstract class MessageCommand : Comparable<MessageCommand>
 {
-    val subcommands = mutableListOf<MessageCommand>()
-
-    internal val firstWords: List<String>
-        get() = names.map { "$prefix$it" }
-
-    internal val commandExample: String
-        get() = "${prefix}${names.first()}"
-
-    /**
-     * Prefix for command literal, so that message is considered a command
-     */
-    abstract val prefix: String
-
     /**
      * This represents the literals by which the command is identified
      */
-    abstract val names: List<String>
+    abstract val ids: List<String>
 
     /**
      * This represents, if the command needs admin powers.
@@ -35,23 +23,7 @@ abstract class MessageCommand
     /**
      * Short help text shown in command overview
      */
-    abstract val shortHelpText: String
-
-    /**
-     * Long help text shown for detailed help
-     */
-    abstract val longHelpText: String
-
-    internal fun getPreorderWithPrefix(prefix: String): List<Pair<String, MessageCommand>>
-    {
-        val result = mutableListOf<Pair<String, MessageCommand>>()
-        val newPrefix = "$prefix ${this.prefix}${names.joinToString(separator = "|")}".trim()
-
-        result.add(newPrefix to this)
-        subcommands.forEach { result.addAll(it.getPreorderWithPrefix(newPrefix)) }
-
-        return result
-    }
+    abstract val helpText: String
 
     /**
      * This method will be called immediately after registering it with a MessageCommandRegistry.
@@ -59,4 +31,20 @@ abstract class MessageCommand
     open fun prepare(kord: Kord) = Unit
 
     abstract val allowedArgumentCombinations: List<ArgumentCombination>
+
+    internal suspend fun run(event: MessageCreateEvent, args: List<String>)
+    {
+        allowedArgumentCombinations.sorted().forEach { combination ->
+            if (combination.fitsTo(args.drop(1)))
+            {
+                combination.run(event, args)
+                return
+            }
+        }
+    }
+
+    override fun compareTo(other: MessageCommand): Int
+    {
+        return (ids.firstOrNull() ?: "").compareTo(other.ids.firstOrNull() ?: "")
+    }
 }
