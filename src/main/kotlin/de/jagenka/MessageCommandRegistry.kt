@@ -34,6 +34,10 @@ class MessageCommandRegistry(
         it.message.channel.createMessage("You can only do that in a channel marked \"NSFW\"!")
     }
 
+    var isSenderAdmin: suspend (event: MessageCreateEvent) -> Boolean = {
+        it.member?.isOwner() == true // TODO: adminRole
+    }
+
     init
     {
         kord.on<MessageCreateEvent> {
@@ -53,12 +57,6 @@ class MessageCommandRegistry(
             val firstWord = args.getOrNull(0) ?: return@on
 
             val command = commands[firstWord.removePrefix(prefix)] ?: return@on
-
-            if (command.needsAdmin && this.member?.isOwner() != true) // command needs admin, but sender is not owner TODO: adminRole
-            {
-                needsAdminResponse.invoke(this)
-                return@on
-            }
 
             if (command.needsNSFW && !this.message.channel.fetchChannel().data.nsfw.discordBoolean) // channel is not NSFW, but needs to be
             {
@@ -80,17 +78,18 @@ class MessageCommandRegistry(
             if (commands.containsKey(it)) error("command id `$it` is already assigned to command ${commands[it]}")
             commands[it] = command
         }
+        command.registry = this
         command.prepare(kord)
     }
 
-    internal fun getShortHelpTexts(): List<String> //TODO: filter admin
+    internal suspend fun getShortHelpTexts(event: MessageCreateEvent): List<String>
     {
-        return commands.values.toSortedSet().map { it.ids.joinToString(separator = "|", postfix = ": ${it.helpText}") { "`$prefix$it`" } }
+        return commands.values.toSortedSet().filter { isSenderAdmin.invoke(event) || it.allowedArgumentCombinations.any { !it.needsAdmin } }.map { it.ids.joinToString(separator = "|", postfix = ": ${it.helpText}") { "`$prefix$it`" } }
     }
 
-    internal fun getHelpTextsForCommand(id: String): List<String>
+    internal suspend fun getHelpTextsForCommand(id: String, event: MessageCreateEvent): List<String>
     {
-        return commands[id]?.allowedArgumentCombinations?.map {
+        return commands[id]?.allowedArgumentCombinations?.filter { !it.needsAdmin || isSenderAdmin.invoke(event) }?.map {
             it.arguments.joinToString(prefix = "`$prefix$id ", separator = " ") {
                 it.displayInHelp
             }.trim() + "`: ${it.helpText}"

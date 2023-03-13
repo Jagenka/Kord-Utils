@@ -5,7 +5,8 @@ import dev.kord.core.event.message.MessageCreateEvent
 class ArgumentCombination(
         internal val arguments: List<Argument<*>>,// TODO?: vararg
         internal val helpText: String,
-        private val executes: suspend (event: MessageCreateEvent, arguments: Map<String, Any?>) -> Boolean // TODO: Any is not quite satisfactory
+        internal val needsAdmin: Boolean = false,
+        private val executes: suspend (event: MessageCreateEvent, arguments: Map<String, Any?>) -> Boolean
 ) : Comparable<ArgumentCombination>
 {
     internal fun fitsTo(args: List<String>): Boolean

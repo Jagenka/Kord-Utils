@@ -5,15 +5,12 @@ import dev.kord.core.event.message.MessageCreateEvent
 
 abstract class MessageCommand : Comparable<MessageCommand>
 {
+    internal var registry: MessageCommandRegistry? = null
+
     /**
      * This represents the literals by which the command is identified
      */
     abstract val ids: List<String>
-
-    /**
-     * This represents, if the command needs admin powers.
-     */
-    abstract val needsAdmin: Boolean
 
     /**
      * This represents, if the command needs to be executed in a channel marked NSFW.
@@ -37,6 +34,11 @@ abstract class MessageCommand : Comparable<MessageCommand>
         allowedArgumentCombinations.sorted().forEach { combination ->
             if (combination.fitsTo(args.drop(1)))
             {
+                if (combination.needsAdmin && registry?.isSenderAdmin?.invoke(event) != true)
+                {
+                    registry?.needsAdminResponse?.invoke(event)
+                    return
+                }
                 combination.run(event, args)
                 return
             }

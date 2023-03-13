@@ -20,10 +20,10 @@ object Test
 
             val registry = MessageCommandRegistry(kord, "!")
             registry.register(HelloCommand)
-            registry.register(HelpMessageCommand(registry))
+            registry.register(HelpMessageCommand)
 
 //            registry.register(NSFWCommand)
-//            registry.register(AdminCommand)
+            registry.register(AdminCommand)
 
             registry.needsNSFWResponse = { event ->
                 Util.addReactionToMessage(event.message, Emojis.x)
@@ -33,7 +33,6 @@ object Test
                 Util.addReactionToMessage(event.message, Emojis.facePalm)
             }
 
-            // scheinbar passiert nach login nichts mehr
             kord.login {
                 @OptIn(PrivilegedIntent::class)
                 intents += Intent.MessageContent
@@ -48,8 +47,6 @@ object HelloCommand : MessageCommand()
         get() = listOf("hello", "hi")
     override val helpText: String
         get() = "sag hallo jetzt"
-    override val needsAdmin: Boolean
-        get() = false
     override val needsNSFW: Boolean
         get() = false
 
@@ -59,65 +56,66 @@ object HelloCommand : MessageCommand()
                     event.message.channel.createMessage("0 args")
                     true
                 },
-                ArgumentCombination(listOf(string("name")), "tell me your name, and I will say Hello!") { event, arguments ->
+                ArgumentCombination(listOf(StringArgument("name")), "tell me your name, and I will say Hello!") { event, arguments ->
                     Util.sendMessageInSameChannel(event, "Hello ${arguments["name"]}")
                     true
                 },
-                ArgumentCombination(listOf(literal("jay")), "ne net du jay") { event, _ ->
+                ArgumentCombination(listOf(literal("jay")), "ne net du jay", true) { event, _ ->
                     Util.sendMessageInSameChannel(event, "Verpiss dich, Jay!")
+                    true
+                },
+                ArgumentCombination(listOf(literal("set"), string("name")), "berispel") { event, arguments ->
+                    Util.sendMessageInSameChannel(event, "You have set ${arguments["name"]}")
                     true
                 },
         )
 }
 
-/*object NSFWCommand : MessageCommand()
+object TagCommand : MessageCommand()
 {
-    override val prefix: String
-        get() = "!"
-    override val names: List<String>
-        get() = listOf("nsfw", "filth", "nixschlimmes")
-    override val shortHelpText: String
-        get() = "short help"
-    override val longHelpText: String
-        get() = "long help"
-    override val needsAdmin: Boolean
+    override val ids: List<String>
+        get() = listOf("tag", "t")
+    override val needsNSFW: Boolean
         get() = false
+    override val helpText: String
+        get() = "create/get saved tags"
+    override val allowedArgumentCombinations: List<ArgumentCombination>
+        get() = listOf(
+                ArgumentCombination(listOf(literal("create"), string("tagName"), string("content")), "creates a new tag") { event, arguments ->
+                    true
+                },
+                ArgumentCombination(listOf(string("tagName")), "displays a tag") { event, arguments ->
+                    true
+                },
+
+                )
+
+}
+
+object NSFWCommand : MessageCommand()
+{
+    override val ids: List<String>
+        get() = listOf("nsfw")
     override val needsNSFW: Boolean
         get() = true
+    override val helpText: String
+        get() = "nsfw"
 
-    override fun prepare(kord: Kord)
-    {
-        println("NSFWCommand ready.")
-    }
-
-    override suspend fun execute(event: MessageCreateEvent, args: List<String>)
-    {
-        Util.sendMessageInSameChannel(event, "kinky")
-    }
+    override val allowedArgumentCombinations: List<ArgumentCombination>
+        get() = listOf()
 }
 
 object AdminCommand : MessageCommand()
 {
-    override val prefix: String
-        get() = "!"
-    override val names: List<String>
-        get() = listOf("admin")
-    override val shortHelpText: String
-        get() = "short help"
-    override val longHelpText: String
-        get() = "long help"
-    override val needsAdmin: Boolean
-        get() = true
+    override val ids: List<String>
+        get() = listOf("admon")
     override val needsNSFW: Boolean
         get() = false
+    override val helpText: String
+        get() = "admon"
 
-    override fun prepare(kord: Kord)
-    {
-        println("AdminCommand ready.")
-    }
-
-    override suspend fun execute(event: MessageCreateEvent, args: List<String>)
-    {
-        Util.sendMessageInSameChannel(event, Emojis.`+1`.code)
-    }
-}*/
+    override val allowedArgumentCombinations: List<ArgumentCombination>
+        get() = listOf(
+                ArgumentCombination(listOf(), "nur für admons", true) { event, arguments -> true }
+        )
+}
