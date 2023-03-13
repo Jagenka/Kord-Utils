@@ -1,7 +1,7 @@
-package de.jagenka
+package de.jagenka.kordutils
 
-import de.jagenka.Argument.Companion.literal
-import de.jagenka.Argument.Companion.string
+import de.jagenka.kordutils.Argument.Companion.literal
+import de.jagenka.kordutils.Argument.Companion.string
 import dev.kord.core.Kord
 import dev.kord.gateway.Intent
 import dev.kord.gateway.PrivilegedIntent

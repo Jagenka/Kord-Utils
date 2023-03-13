@@ -1,4 +1,4 @@
-package de.jagenka
+package de.jagenka.kordutils
 
 interface Argument<T>
 {
