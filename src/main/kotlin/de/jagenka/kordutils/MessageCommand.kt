@@ -1,11 +1,10 @@
 package de.jagenka.kordutils
 
-import dev.kord.core.Kord
 import dev.kord.core.event.message.MessageCreateEvent
 
 abstract class MessageCommand : Comparable<MessageCommand>
 {
-    internal var registry: MessageCommandRegistry? = null
+    internal var registry: Registry? = null
 
     /**
      * This represents the literals by which the command is identified
@@ -23,13 +22,13 @@ abstract class MessageCommand : Comparable<MessageCommand>
     abstract val helpText: String
 
     /**
-     * This method will be called immediately after registering it with a MessageCommandRegistry.
+     * This method will be called immediately after registering it with a Registry.
      */
-    open fun prepare(kord: Kord) = Unit
+    abstract fun prepare(registry: Registry)
 
     abstract val allowedArgumentCombinations: List<ArgumentCombination>
 
-    internal suspend fun run(event: MessageCreateEvent, args: List<String>)
+    internal suspend fun run(event: MessageCreateEvent, args: List<String>): Boolean
     {
         allowedArgumentCombinations.sorted().forEach { combination ->
             if (combination.fitsTo(args.drop(1)))
@@ -37,12 +36,13 @@ abstract class MessageCommand : Comparable<MessageCommand>
                 if (combination.needsAdmin && registry?.isSenderAdmin?.invoke(event) != true)
                 {
                     registry?.needsAdminResponse?.invoke(event)
-                    return
+                    return false
                 }
-                combination.run(event, args)
-                return
+                return combination.run(event, args)
             }
         }
+
+        return false
     }
 
     override fun compareTo(other: MessageCommand): Int
